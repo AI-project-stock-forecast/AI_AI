@@ -17,10 +17,13 @@ def _get_sise_last_index(code):
     return last_index
 
 def get_sise_data(code):
+    '''
+    날짜, 시가, 종가, 고가, 저가
+    '''
+
     page_end = _get_sise_last_index(code)
 
-    df = pd.DataFrame(columns=['시가', '종가', '고가', '저가'])
-    df.index.name = '날짜'
+    res = []
 
     for page in range(1, page_end + 1):
         url = f'https://finance.naver.com/item/sise_day.naver?code={code}&page={page}'
@@ -32,10 +35,11 @@ def get_sise_data(code):
             if 날짜.encode() == b'\xc2\xa0': continue
 
             시가, 종가, 고가, 저가 = map(lambda x: int(x.replace(',', '')), [시가, 종가, 고가, 저가])
-            df = df.append(pd.Series([시가, 종가, 고가, 저가], ['시가', '종가', '고가', '저가'], name=날짜))
+            res.append([날짜, 시가, 종가, 고가, 저가])
 
-    return df
-
+    return res
+# get_jongmok_list('네이버')
+# XXXXXX NAVER
 def get_jongmok_list(name):
     name = urllib.parse.quote(name, encoding='cp949')
 
@@ -64,10 +68,13 @@ def get_jongmok_list(name):
     return res
 
 def get_quant_list():
+    '''
+    종목 코드, 종목명, 현재가, 등락률, 거래가
+    '''
+
     url = 'https://finance.naver.com/sise/sise_quant.naver'
 
-    df = pd.DataFrame(columns=['종목명', '현재가'])
-    df.index.name = '종목 코드'
+    res = []
 
     soup = BeautifulSoup(requests.get(url).text, 'lxml')
     table = soup.find('table', {'class': 'type_2'})
@@ -83,7 +90,6 @@ def get_quant_list():
             종목명 = 종목명.find('a').text
             현재가 = int(현재가.text.replace(',', ''))
 
-            '''
             if 전일비.find('img').attrs['src'] == 'https://ssl.pstatic.net/imgstock/images/images4/ico_down.gif':
                 전일비 = -int(전일비.find('span').text.replace('\r', '').replace('\t', ''))
             else:
@@ -98,11 +104,10 @@ def get_quant_list():
             ROE = ROE.text
 
             print(현재가, 전일비, 등락률, 거래량, 거래대금, 매수호가, 매도호가, 시가총액, PER, ROE)
-            '''
 
-            df = df.append(pd.Series([종목명, 현재가], ['종목명', '현재가'], name=code))
+            res.append([code, 종목명, 현재가, 등락률, 거래량])
 
         except Exception as e:
             ...
 
-    return df
+    return res
