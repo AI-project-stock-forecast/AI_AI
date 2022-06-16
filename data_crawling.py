@@ -1,5 +1,4 @@
 import requests
-import pandas as pd
 import urllib.parse
 from bs4 import BeautifulSoup
 
@@ -103,11 +102,40 @@ def get_quant_list():
             PER = PER.text
             ROE = ROE.text
 
-            print(현재가, 전일비, 등락률, 거래량, 거래대금, 매수호가, 매도호가, 시가총액, PER, ROE)
-
             res.append([code, 종목명, 현재가, 등락률, 거래량])
 
         except Exception as e:
             ...
 
     return res
+
+import statsmodels.api as sm
+import matplotlib.pyplot as plt
+
+# 예측할 데이터의 이전 데이터들을 줌
+# 일주일 예측함
+def predict(data):
+    model = sm.tsa.arima.ARIMA(data, order=(2, 1, 2))
+    model_fit = model.fit()
+
+    start_index = len(data)
+    end_index = len(data) + 7
+
+    forecast = model_fit.predict(start=start_index, end=end_index)
+    forecast = forecast.to_list()
+
+    print(forecast)
+
+    return forecast
+
+if __name__ == '__main__':
+    # data = get_sise_data('035420')
+    with open('res.csv', 'r', encoding='cp949') as f:
+        data = pd.read_csv(f)
+    
+    date = data['날짜']
+    siga = data['시가']
+    siga = siga.apply(lambda x: int(x.replace(',','')))
+
+    siga_fore = siga[:-7]
+    forecast = predict(siga_fore)
